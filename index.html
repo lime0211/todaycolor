@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>오늘컬러</title>
+  <meta name="description" content="오늘의 기운에 맞춘 행운의 색과 코디 추천">
+
+  <!-- 홈 화면 앱 (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="오늘컬러">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main id="view-today" class="view">
+    <header class="topbar">
+      <h1 id="title">오늘의 컬러</h1>
+      <button id="reroll" class="icon-btn" aria-label="다시 뽑기">🎲</button>
+    </header>
+
+    <div class="segmented" role="tablist">
+      <button role="tab" data-day="today" aria-selected="true">오늘</button>
+      <button role="tab" data-day="tomorrow" aria-selected="false">내일</button>
+    </div>
+
+    <section id="today-content" aria-live="polite"></section>
+    <p class="footnote center">재미로 보는 추천이에요 🙂</p>
+  </main>
+
+  <main id="view-settings" class="view" hidden>
+    <header class="topbar"><h1>설정</h1></header>
+
+    <h2 class="group-title">내 기운 (일간)</h2>
+    <div class="group">
+      <label class="row">
+        <span>생년월일 (양력)</span>
+        <input type="date" id="birthday" min="1900-01-01" max="2100-12-31">
+      </label>
+      <button class="row link" id="calc">내 오행 계산하기</button>
+    </div>
+    <p class="group-footer">태어난 날의 일진 천간으로 오행을 정해요. 음력 생일은 양력으로 바꿔서 입력해 주세요.</p>
+
+    <h2 class="group-title">추천 방식</h2>
+    <div class="group" id="mode-group"></div>
+
+    <h2 class="group-title">앱처럼 쓰기</h2>
+    <div class="group">
+      <div class="row text" id="install-hint"></div>
+    </div>
+  </main>
+
+  <nav class="tabbar">
+    <button data-tab="today" aria-current="page"><span>☀️</span>오늘</button>
+    <button data-tab="settings"><span>⚙️</span>설정</button>
+  </nav>
+</body>
+</html>
