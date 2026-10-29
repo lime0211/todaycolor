@@ -1,7 +1,8 @@
 // 오프라인 실행용 서비스 워커.
-// 저장해 둔 파일로 바로 열고, 뒤에서 최신 파일을 받아 다음 실행 때 반영한다.
-// ⚠️ 파일 목록을 바꾸면 VERSION 숫자를 올릴 것.
-const VERSION = "v2";
+// 저장해 둔 파일로 바로 열고, 뒤에서 최신 파일을 받아 둔다.
+// ⚠️ 파일을 고쳐서 다시 올릴 때마다 VERSION을 올릴 것 — 이 숫자가 바뀌어야
+//    열려 있는 앱이 새 버전을 감지하고 자동으로 새로고침한다 (app.js 참고).
+const VERSION = "v3";
 const CACHE = `todaycolor-${VERSION}`;
 const FILES = [
   "./",
@@ -18,7 +19,9 @@ const FILES = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: "reload" — 브라우저의 HTTP 캐시(GitHub Pages는 10분)를 건너뛰고 서버에서 새로 받는다
+  const requests = FILES.map((f) => new Request(f, { cache: "reload" }));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(requests)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {

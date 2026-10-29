@@ -222,9 +222,36 @@ async function start() {
   ]);
   bindEvents();
   renderToday();
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(() => { /* 오프라인 기능만 빠짐 */ });
-  }
+  registerServiceWorker();
+}
+
+/**
+ * 오프라인용 서비스 워커 등록 + 새 버전 자동 적용.
+ * sw.js의 VERSION이 바뀌면 새 워커가 설치·활성화되고(controllerchange),
+ * 그때 한 번 새로고침해서 바로 새 화면을 보여 준다.
+ */
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  const sw = navigator.serviceWorker;
+  // 처음 설치될 때는 새로고침할 필요 없음 (이미 최신 파일)
+  const hadController = !!sw.controller;
+  let reloading = false;
+  sw.addEventListener("controllerchange", () => {
+    if (!hadController || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+
+  // sw.js 자체는 HTTP 캐시를 쓰지 않아야 새 버전을 바로 알아챈다
+  sw.register("sw.js", { updateViaCache: "none" })
+    .then((reg) => {
+      // 홈 화면 앱은 페이지를 새로 열지 않고 백그라운드에서 돌아오는 경우가 많아,
+      // 다시 보일 때마다 업데이트를 확인
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) reg.update().catch(() => {});
+      });
+    })
+    .catch(() => { /* 오프라인 기능만 빠짐 */ });
 }
 
 start();
