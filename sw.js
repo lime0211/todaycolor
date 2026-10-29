@@ -1,7 +1,7 @@
 // 오프라인 실행용 서비스 워커.
 // 저장해 둔 파일로 바로 열고, 뒤에서 최신 파일을 받아 다음 실행 때 반영한다.
 // ⚠️ 파일 목록을 바꾸면 VERSION 숫자를 올릴 것.
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `todaycolor-${VERSION}`;
 const FILES = [
   "./",
@@ -10,6 +10,7 @@ const FILES = [
   "app.js",
   "logic.js",
   "data/StyleData.json",
+  "data/Zodiac.json",
   "manifest.webmanifest",
   "icons/icon-180.png",
   "icons/icon-192.png",

@@ -1,5 +1,5 @@
 import {
-  ELEMENT_INFO, SLOT_INFO, fromJulianDay, ganjiOf, julianDay, recommend, relation, todayKST,
+  ELEMENT_INFO, SLOT_INFO, fromJulianDay, ganjiOf, horoscope, julianDay, recommend, relation, todayKST, zodiacOf,
 } from "./logic.js";
 
 const MAX_REROLLS = 3;
@@ -21,10 +21,20 @@ const store = {
 
 // ───────── 상태 ─────────
 let data;
+let zodiac;
 let day = "today"; // "today" | "tomorrow"
 
 const todayJDN = () => julianDay(todayKST());
 const myElement = () => store.get("myElement", null);
+/** 생년월일을 입력해 오행 모드일 때만 별자리 사용 */
+function mySign() {
+  if (!myElement()) return null;
+  const saved = store.get("mySign", null);
+  if (saved) return saved;
+  // 별자리 기능 이전에 생년월일을 입력한 사용자: 저장된 생일로 계산
+  const [, m, d] = store.get("birthday", "").split("-").map(Number);
+  return m && d ? zodiacOf({ m, d }) : null;
+}
 
 /** 다시 뽑기 횟수는 날짜와 함께 저장 — 다시 열어도 하루 3회 유지, 자정이 지나면 초기화 */
 function rerollCount() {
@@ -37,8 +47,10 @@ function renderToday({ animate = false } = {}) {
   const jdn = todayJDN() + (day === "tomorrow" ? 1 : 0);
   const ymd = fromJulianDay(jdn);
   const me = myElement();
+  const sign = mySign();
   const used = rerollCount();
-  const rec = recommend(data, ymd, { myElement: me, reroll: day === "today" ? used : 0 });
+  const rec = recommend(data, ymd, { myElement: me, reroll: day === "today" ? used : 0, sign, zodiac });
+  const horo = sign ? horoscope(zodiac, sign, ymd) : null;
 
   $("#title").textContent = day === "today" ? "오늘의 컬러" : "내일의 컬러";
   const btn = $("#reroll");
@@ -50,8 +62,22 @@ function renderToday({ animate = false } = {}) {
     ? "👀 미리보기"
     : used < MAX_REROLLS ? `🎲 ${MAX_REROLLS - used}회 남음` : "🎲 오늘은 모두 사용";
   const reason = me
-    ? `<p class="reason">🧭 내 기운 ${ELEMENT_INFO[me].korean} · ${relation(rec.ganji.element, me).summary} → ${ELEMENT_INFO[rec.lucky].energy} 컬러로 균형</p>`
+    ? `<p class="reason">🧭 내 기운 ${ELEMENT_INFO[me].korean}${horo ? ` · ${horo.symbol} ${horo.name}` : ""} · ${relation(rec.ganji.element, me).summary} → ${ELEMENT_INFO[rec.lucky].energy} 컬러로 균형</p>`
     : "";
+  const accentLabel = rec.accentColor.zodiac ? `포인트 (${zodiac.signs[rec.accentColor.zodiac].name})` : "포인트";
+
+  const zodiacCard = horo
+    ? `<div class="card zodiac">
+        <h3>${horo.symbol} ${horo.name} ${day === "today" ? "오늘" : "내일"}의 운세</h3>
+        <p class="z-line"><b>총운</b> ${esc(horo.overall)}</p>
+        <p class="z-line"><b>💕 애정</b> ${esc(horo.love)}</p>
+        <p class="z-line"><b>💰 재물</b> ${esc(horo.money)}</p>
+        <div class="z-lucky">
+          <span>🔢 행운의 숫자 <b>${horo.number}</b></span>
+          <span><span class="dot" style="background:${esc(horo.color.hex)}"></span> ${esc(horo.color.name)}</span>
+        </div>
+      </div>`
+    : `<button class="card hint" id="go-settings">✨ 설정에서 생년월일을 입력하면 <b>별자리 운세</b>와 나만의 코디를 볼 수 있어요 →</button>`;
   const swatch = (c, label, size) => `
     <div class="swatch">
       <div style="width:${size}px;height:${size}px;background:${esc(c.hex)}"></div>
@@ -71,7 +97,7 @@ function renderToday({ animate = false } = {}) {
 
     <div class="card swatches">
       ${swatch(rec.mainColor, "메인", 96)}
-      ${swatch(rec.accentColor, "포인트", 64)}
+      ${swatch(rec.accentColor, accentLabel, 64)}
     </div>
 
     <div class="card">
@@ -85,6 +111,8 @@ function renderToday({ animate = false } = {}) {
         </div>`).join("")}
     </div>
 
+    ${zodiacCard}
+
     <div class="card">
       <h3>럭키 팁</h3>
       <div class="tips">
@@ -94,6 +122,8 @@ function renderToday({ animate = false } = {}) {
         <span>🎨 ${esc(rec.tip.color.name)}</span>
       </div>
     </div>`;
+
+  $("#go-settings")?.addEventListener("click", () => showTab("settings"));
 
   if (animate) {
     el.classList.remove("flash");
@@ -105,13 +135,16 @@ function renderToday({ animate = false } = {}) {
 // ───────── 설정 화면 ─────────
 function renderSettings() {
   const me = myElement();
+  const sign = mySign();
   $("#birthday").value = store.get("birthday", "1995-01-01");
   $("#mode-group").innerHTML = me
     ? `<div class="row"><span>내 오행</span><span class="value">${ELEMENT_INFO[me].korean} · ${ELEMENT_INFO[me].energy}의 기운</span></div>
+       ${sign ? `<div class="row"><span>내 별자리</span><span class="value">${zodiac.signs[sign].symbol} ${zodiac.signs[sign].name} (${zodiac.signs[sign].dates})</span></div>` : ""}
        <button class="row danger" id="reset-mode">오늘의 기운 모드로 되돌리기</button>`
     : `<div class="row text">오늘의 기운 모드: 그날 일진의 오행에 맞춰 추천해요</div>`;
   $("#reset-mode")?.addEventListener("click", () => {
     store.set("myElement", null);
+    store.set("mySign", null);
     renderSettings();
   });
 
@@ -131,6 +164,7 @@ function applyBirthday() {
   const [y, m, d] = v.split("-").map(Number);
   store.set("birthday", v);
   store.set("myElement", ganjiOf({ y, m, d }).element);
+  store.set("mySign", zodiacOf({ m, d }));
   renderSettings();
 }
 
@@ -182,7 +216,10 @@ function bindEvents() {
 
 // ───────── 시작 ─────────
 async function start() {
-  data = await (await fetch("data/StyleData.json")).json();
+  [data, zodiac] = await Promise.all([
+    fetch("data/StyleData.json").then((r) => r.json()),
+    fetch("data/Zodiac.json").then((r) => r.json()),
+  ]);
   bindEvents();
   renderToday();
   if ("serviceWorker" in navigator) {

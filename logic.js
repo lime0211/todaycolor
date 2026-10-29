@@ -166,13 +166,54 @@ export const SLOT_INFO = {
   accessory: { korean: "소품", emoji: "👜" },
 };
 
+// ───────── 별자리 ─────────
+// 각 별자리의 시작일 (월, 일). 염소자리는 12/22에 시작해 해를 넘긴다.
+const ZODIAC_STARTS = [
+  ["capricorn", 1, 1], ["aquarius", 1, 20], ["pisces", 2, 19], ["aries", 3, 21],
+  ["taurus", 4, 20], ["gemini", 5, 21], ["cancer", 6, 22], ["leo", 7, 23],
+  ["virgo", 8, 23], ["libra", 9, 23], ["scorpio", 10, 23], ["sagittarius", 11, 22],
+  ["capricorn", 12, 22],
+];
+
+/** 생일(월·일) → 별자리 키 ("aries" 등) */
+export function zodiacOf({ m, d }) {
+  let sign = "capricorn";
+  for (const [key, sm, sd] of ZODIAC_STARTS) {
+    if (m > sm || (m === sm && d >= sd)) sign = key;
+  }
+  return sign;
+}
+
+/**
+ * 오늘의 별자리 운세. 다시 뽑기와 무관하게 하루 동안 고정.
+ * 총운은 특성(5개)×문장(73개)을 날짜 순번으로 돌려 365일 동안 같은 조합이 나오지 않는다.
+ */
+export function horoscope(zodiac, sign, ymd) {
+  const s = zodiac.signs[sign];
+  const day = julianDay(ymd);
+  const pick = (list, key) => rotationPick(list, day, `zodiac.${key}.${sign}`);
+  return {
+    sign,
+    name: s.name,
+    symbol: s.symbol,
+    overall: `${pick(s.traits, "trait")} ${pick(zodiac.general, "general")}`,
+    love: pick(zodiac.love, "love"),
+    money: pick(zodiac.money, "money"),
+    number: pick([...Array(47).keys()].map((i) => i + 1), "number"),
+    color: pick(s.colors, "color"),
+  };
+}
+
 /**
  * @param data StyleData.json
  * @param ymd  {y, m, d} (한국 날짜)
  * @param myElement 내 오행 ("wood" 등) — 없으면 오늘 일진 기운 모드
  * @param reroll 다시 뽑기 횟수
+ * @param sign, zodiac 별자리 키와 Zodiac.json — 있으면 별자리별로 다른 순서로 섞고,
+ *        포인트 컬러를 별자리 행운의 색에서 고른다
  */
-export function recommend(data, ymd, { myElement = null, reroll = 0, userKey = "" } = {}) {
+export function recommend(data, ymd, { myElement = null, reroll = 0, userKey = "", sign = null, zodiac = null } = {}) {
+  if (sign && zodiac && !userKey) userKey = sign;
   const ganji = ganjiOf(ymd);
   const day = julianDay(ymd);
 
@@ -190,7 +231,9 @@ export function recommend(data, ymd, { myElement = null, reroll = 0, userKey = "
 
   const main = pick(colorOf(lucky), lo, `color.${lucky}`);
   const accentEl = generatedBy(lucky);
-  const accent = pick(colorOf(accentEl), d, `accent.${accentEl}`);
+  const accent = sign && zodiac
+    ? { ...pick(zodiac.signs[sign].colors, d, `accent.zodiac.${sign}`), zodiac: sign }
+    : pick(colorOf(accentEl), d, `accent.${accentEl}`);
 
   // 코디: 메인 컬러 1벌 + 무채색 + 포인트 컬러 소품
   const season = seasonOf(ymd);

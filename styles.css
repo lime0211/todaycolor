@@ -84,6 +84,17 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .tips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
 .tips .wide { grid-column: 1 / -1; }
 
+/* 별자리 운세 카드 */
+.zodiac .z-line { margin: 6px 0; font-size: 16px; }
+.zodiac .z-line b { color: var(--secondary); font-weight: 600; margin-right: 6px; font-size: 14px; }
+.zodiac .z-lucky {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; padding-top: 10px;
+  border-top: 0.5px solid var(--separator); font-size: 15px;
+}
+.zodiac .z-lucky span { display: inline-flex; align-items: center; gap: 6px; }
+.card.hint { display: block; width: 100%; text-align: left; font-size: 15px; color: var(--secondary); }
+.card.hint b { color: var(--text); }
+
 .footnote { color: var(--secondary); font-size: 13px; }
 .center { text-align: center; }
 
